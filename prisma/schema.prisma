@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+model Account {
+  id        String        @id @default(uuid())
+  name      String        @db.VarChar(255)
+  slug      String        @unique @db.VarChar(100)
+  status    AccountStatus @default(ACTIVE)
+  settings  Json          @default("{}")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  users            User[]
+  roles            Role[]
+  invitations      Invitation[]
+  auditLogs        AuditLog[]
+  passwordPolicies PasswordPolicy?
+
+  @@index([slug])
+  @@index([status])
+  @@map("accounts")
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+  DELETED
+}
+
+model User {
+  id              String     @id @default(uuid())
+  accountId       String     @map("account_id")
+  email           String     @db.VarChar(255)
+  firstName       String?    @map("first_name") @db.VarChar(100)
+  lastName        String?    @map("last_name") @db.VarChar(100)
+  status          UserStatus @default(ACTIVE)
+  emailVerified   Boolean    @default(false) @map("email_verified")
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  lastLoginAt     DateTime?  @map("last_login_at")
+
+  account       Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  credential    Credential?
+  oauthAccounts OAuthAccount[]
+  userRoles     UserRole[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  loginAttempts LoginAttempt[]
+
+  @@unique([accountId, email])
+  @@index([accountId])
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  DELETED
+}
+
+model Credential {
+  id                 String    @id @default(uuid())
+  userId             String    @unique @map("user_id")
+  passwordHash       String    @map("password_hash") @db.VarChar(255)
+  passwordChangedAt  DateTime? @map("password_changed_at")
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  failedAttempts     Int       @default(0) @map("failed_attempts")
+  lockedUntil        DateTime? @map("locked_until")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("credentials")
+}
+
+model OAuthAccount {
+  id                String        @id @default(uuid())
+  userId            String        @map("user_id")
+  provider          OAuthProvider
+  providerAccountId String        @map("provider_account_id") @db.VarChar(255)
+  accessToken       String?       @map("access_token") @db.Text
+  refreshToken      String?       @map("refresh_token") @db.Text
+  tokenExpiresAt    DateTime?     @map("token_expires_at")
+  providerEmail     String?       @map("provider_email") @db.VarChar(255)
+  providerData      Json?         @map("provider_data")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+enum OAuthProvider {
+  GOOGLE
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  accountId        String    @map("account_id")
+  refreshTokenHash String    @map("refresh_token_hash") @db.VarChar(255)
+  userAgent        String?   @map("user_agent") @db.VarChar(500)
+  ipAddress        String?   @map("ip_address") @db.VarChar(45)
+  deviceId         String?   @map("device_id") @db.VarChar(255)
+  isRevoked        Boolean   @default(false) @map("is_revoked")
+  revokedAt        DateTime? @map("revoked_at")
+  revokedReason    String?   @map("revoked_reason") @db.VarChar(255)
+  expiresAt        DateTime  @map("expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  lastUsedAt       DateTime  @default(now()) @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([refreshTokenHash])
+  @@index([expiresAt])
+  @@index([isRevoked])
+  @@map("sessions")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  accountId   String   @map("account_id")
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  account         Account          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@unique([accountId, name])
+  @@index([accountId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  resource    String   @db.VarChar(50)
+  action      String   @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@index([resource])
+  @@index([code])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  roleId     String   @map("role_id")
+  assignedBy String?  @map("assigned_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Invitation {
+  id         String           @id @default(uuid())
+  accountId  String           @map("account_id")
+  email      String           @db.VarChar(255)
+  token      String           @unique @db.VarChar(255)
+  roleId     String?          @map("role_id")
+  invitedBy  String           @map("invited_by")
+  status     InvitationStatus @default(PENDING)
+  expiresAt  DateTime         @map("expires_at")
+  acceptedAt DateTime?        @map("accepted_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, email])
+  @@index([token])
+  @@index([accountId])
+  @@index([email])
+  @@index([status])
+  @@map("invitations")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+model PasswordPolicy {
+  id                  String   @id @default(uuid())
+  accountId           String   @unique @map("account_id")
+  minLength           Int      @default(8) @map("min_length")
+  requireUppercase    Boolean  @default(true) @map("require_uppercase")
+  requireLowercase    Boolean  @default(true) @map("require_lowercase")
+  requireNumber       Boolean  @default(true) @map("require_number")
+  requireSpecialChar  Boolean  @default(true) @map("require_special_char")
+  preventReuse        Int      @default(5) @map("prevent_reuse")
+  maxAgeDays          Int?     @map("max_age_days")
+  maxFailedAttempts   Int      @default(5) @map("max_failed_attempts")
+  lockoutDurationMins Int      @default(15) @map("lockout_duration_mins")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("password_policies")
+}
+
+model LoginAttempt {
+  id            String   @id @default(uuid())
+  userId        String?  @map("user_id")
+  email         String   @db.VarChar(255)
+  ipAddress     String   @map("ip_address") @db.VarChar(45)
+  userAgent     String?  @map("user_agent") @db.VarChar(500)
+  success       Boolean
+  failureReason String?  @map("failure_reason") @db.VarChar(255)
+  attemptedAt   DateTime @default(now()) @map("attempted_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([email])
+  @@index([ipAddress])
+  @@index([attemptedAt])
+  @@index([success])
+  @@map("login_attempts")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  accountId  String   @map("account_id")
+  userId     String?  @map("user_id")
+  action     String   @db.VarChar(100)
+  resource   String   @db.VarChar(100)
+  resourceId String?  @map("resource_id") @db.VarChar(100)
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.VarChar(500)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([accountId])
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
