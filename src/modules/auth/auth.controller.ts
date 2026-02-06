@@ -9,7 +9,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, GoogleAuthDto, RefreshTokenDto } from './dto';
@@ -27,7 +26,6 @@ export class AuthController {
 
   @Post('login')
   @Public()
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with credentials' })
   @ApiBody({ type: LoginDto })
@@ -42,7 +40,6 @@ export class AuthController {
 
   @Post('register')
   @Public()
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register new user' })
   @ApiBody({ type: RegisterDto })
@@ -57,7 +54,6 @@ export class AuthController {
 
   @Post('google')
   @Public()
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Google OAuth' })
   @ApiBody({ type: GoogleAuthDto })
@@ -71,7 +67,6 @@ export class AuthController {
 
   @Post('refresh')
   @Public()
-  @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh tokens' })
   @ApiBody({ type: RefreshTokenDto })

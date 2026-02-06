@@ -63,14 +63,11 @@ import { JwtAuthGuard, CustomThrottlerGuard } from './common/guards';
     HealthModule,
   ],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: CustomThrottlerGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
+    // Temporarily disabled rate limiting
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: CustomThrottlerGuard,
+    // },
   ],
 })
 export class AppModule {}

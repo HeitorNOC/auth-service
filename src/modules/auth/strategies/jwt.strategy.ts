@@ -63,6 +63,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       await this.redisService.cacheUserPermissions(user.id, user.accountId, permissions);
     }
 
+    console.log('Permissions for user', user.id, permissions);
+
     return {
       userId: user.id,
       accountId: user.accountId,

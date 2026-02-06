@@ -33,6 +33,16 @@ async function bootstrap() {
     }),
   );
 
+  // Middleware global para logar todas as requisições
+  app.use((req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      console.log(`[GlobalLog] ${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`);
+    });
+    next();
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Auth Service')
     .setDescription('Multi-tenant Authentication and Authorization Service')

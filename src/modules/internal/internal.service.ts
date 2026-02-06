@@ -72,21 +72,40 @@ export class InternalService {
     }
   }
 
-  async verifyToken(accessToken: string): Promise<{ valid: boolean; payload?: JwtPayload }> {
+  async verifyToken(accessToken: string): Promise<{ valid: boolean; user?: { id: string; accountId: string; roles: string[]; permissions: string[] } }> {
     try {
+      console.log('[verifyToken] received accessToken:', accessToken);
       const payload = this.jwtService.verify<JwtPayload>(accessToken, {
         secret: this.configService.get<string>('jwt.accessSecret'),
       });
+      console.log('[verifyToken] decoded payload:', payload);
 
       if (payload.jti) {
         const isBlacklisted = await this.redisService.isTokenBlacklisted(payload.jti);
+        console.log('[verifyToken] isBlacklisted:', isBlacklisted);
         if (isBlacklisted) {
           return { valid: false };
         }
       }
 
-      return { valid: true, payload };
-    } catch {
+      // Buscar permissões do usuário
+      let permissions = await this.redisService.getCachedUserPermissions(payload.sub, payload.accountId);
+      if (!permissions) {
+        permissions = await this.fetchUserPermissions(payload.sub);
+        await this.redisService.cacheUserPermissions(payload.sub, payload.accountId, permissions);
+      }
+
+      return {
+        valid: true,
+        user: {
+          id: payload.sub,
+          accountId: payload.accountId,
+          roles: payload.roles,
+          permissions,
+        },
+      };
+    } catch (error) {
+      console.error('[verifyToken] error verifying token:', error);
       return { valid: false };
     }
   }

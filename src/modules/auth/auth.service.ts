@@ -214,10 +214,18 @@ export class AuthService {
         accountId,
         roles,
         metadata,
+        tx,
       );
 
-      await this.createAuditLog(accountId, user.id, 'user.register', 'user', user.id, metadata);
-
+      await this.createAuditLog(
+        accountId,
+        user.id,
+        'user.register',
+        'user',
+        user.id,
+        metadata,
+        tx,
+      );
       return {
         user: {
           id: user.id,
@@ -227,7 +235,7 @@ export class AuthService {
         },
         tokens,
       };
-    });
+    }, { timeout: 15000 });
   }
 
   async googleAuth(
@@ -307,9 +315,11 @@ export class AuthService {
     resource: string,
     resourceId?: string,
     metadata?: { ipAddress?: string; userAgent?: string },
+    db?: Prisma.TransactionClient,
   ): Promise<void> {
     try {
-      await this.prisma.auditLog.create({
+      const prisma = db ?? this.prisma;
+      await prisma.auditLog.create({
         data: {
           accountId,
           userId,

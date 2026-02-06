@@ -19,7 +19,7 @@ export const validationSchema = Joi.object({
     'string.min': 'JWT_REFRESH_SECRET must be at least 64 characters',
     'string.empty': 'JWT_REFRESH_SECRET is required',
   }),
-  JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
+  JWT_ACCESS_EXPIRES_IN: Joi.string().default('1d'),
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
 
   GOOGLE_CLIENT_ID: Joi.string().optional().allow(''),

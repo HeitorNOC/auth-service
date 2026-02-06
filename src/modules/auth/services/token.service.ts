@@ -25,6 +25,7 @@ export class TokenService {
     accountId: string,
     roles: string[],
     metadata?: { userAgent?: string; ipAddress?: string; deviceId?: string },
+    db?: Prisma.TransactionClient,
   ): Promise<TokenPair> {
     const sessionId = uuidv4();
     const accessTokenId = uuidv4();
@@ -65,7 +66,9 @@ export class TokenService {
     );
     const expiresAt = new Date(Date.now() + refreshExpiresIn * 1000);
 
-    await this.prisma.session.create({
+    const prisma = db ?? this.prisma;
+
+    await prisma.session.create({
       data: {
         id: sessionId,
         userId,

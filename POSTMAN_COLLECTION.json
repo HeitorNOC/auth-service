@@ -1,0 +1,288 @@
+{
+  "info": {
+    "name": "Auth Service + General Portal",
+    "description": "Collection para testar Auth Service e General Portal",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth Service",
+      "item": [
+        {
+          "name": "Authentication",
+          "item": [
+            {
+              "name": "Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.environment.set(\"access_token\", jsonData.tokens.accessToken);",
+                      "    pm.environment.set(\"refresh_token\", jsonData.tokens.refreshToken);",
+                      "    console.log(\"Tokens salvos\");",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"demo@example.com\",\n  \"password\": \"Demo@123\"\n}"
+                },
+                "url": {
+                  "raw": "{{auth_base_url}}/api/v1/auth/login",
+                  "host": ["{{auth_base_url}}"],
+                  "path": ["api", "v1", "auth", "login"]
+                }
+              }
+            },
+            {
+              "name": "Refresh Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.environment.set(\"access_token\", jsonData.tokens.accessToken);",
+                      "    pm.environment.set(\"refresh_token\", jsonData.tokens.refreshToken);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{auth_base_url}}/auth/refresh",
+                  "host": ["{{auth_base_url}}"],
+                  "path": ["auth", "refresh"]
+                }
+              }
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{auth_base_url}}/api/v1/auth/logout",
+                  "host": ["{{auth_base_url}}"],
+                  "path": ["api", "v1", "auth", "logout"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Get Me",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{auth_base_url}}/users/me",
+                  "host": ["{{auth_base_url}}"],
+                  "path": ["users", "me"]
+                }
+              }
+            },
+            {
+              "name": "List Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{auth_base_url}}/api/v1/users",
+                  "host": ["{{auth_base_url}}"],
+                  "path": ["api", "v1", "users"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Internal API",
+          "item": [
+            {
+              "name": "Resolve Context",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Internal-Api-Key",
+                    "value": "{{internal_api_key}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"accessToken\": \"{{access_token}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{auth_base_url}}/internal/resolve-context",
+                  "host": ["{{auth_base_url}}"],
+                  "path": ["internal", "resolve-context"]
+                }
+              }
+            },
+            {
+              "name": "Verify Token",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Internal-Api-Key",
+                    "value": "{{internal_api_key}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"accessToken\": \"{{access_token}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{auth_base_url}}/api/v1/internal/verify-token",
+                  "host": ["{{auth_base_url}}"],
+                  "path": ["api", "v1", "internal", "verify-token"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "General Portal",
+      "item": [
+        {
+          "name": "GraphQL Queries",
+          "item": [
+            {
+              "name": "Me",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"query { me { id email firstName lastName } }\"\n}"
+                },
+                "url": {
+                  "raw": "{{portal_base_url}}/graphql",
+                  "host": ["{{portal_base_url}}"],
+                  "path": ["graphql"]
+                }
+              }
+            },
+            {
+              "name": "Users",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"query { users(limit: 10) { id email firstName lastName } }\"\n}"
+                },
+                "url": {
+                  "raw": "{{portal_base_url}}/graphql",
+                  "host": ["{{portal_base_url}}"],
+                  "path": ["graphql"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "auth_base_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "portal_base_url",
+      "value": "http://localhost:4000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "internal_api_key",
+      "value": "dev-internal-api-key-min-32-chars",
+      "type": "string"
+    }
+  ]
+}

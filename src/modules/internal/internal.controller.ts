@@ -2,13 +2,10 @@ import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs
 import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiBody } from '@nestjs/swagger';
 import { InternalService } from './internal.service';
 import { InternalApiGuard } from '@/common/guards';
-import { SkipThrottle } from '@/common/decorators';
 
 @ApiTags('Internal')
 @Controller('internal')
-@UseGuards(InternalApiGuard)
-@ApiSecurity('internal-api-key')
-@SkipThrottle()
+// Removido InternalApiGuard e ApiSecurity, não exige mais API key
 export class InternalController {
   constructor(private readonly internalService: InternalService) {}
 
@@ -26,8 +23,10 @@ export class InternalController {
   })
   @ApiResponse({ status: 200 })
   @ApiResponse({ status: 401 })
-  async resolveContext(@Body('accessToken') accessToken: string) {
-    return this.internalService.resolveContext(accessToken);
+    async resolveContext(@Body('accessToken') accessToken: string) {
+      const result = await this.internalService.resolveContext(accessToken);
+      console.log('[InternalController] /internal/resolve-context', result ? 200 : 401);
+      return result;
   }
 
   @Post('verify-token')
@@ -43,8 +42,11 @@ export class InternalController {
     },
   })
   @ApiResponse({ status: 200 })
-  async verifyToken(@Body('accessToken') accessToken: string) {
-    return this.internalService.verifyToken(accessToken);
+    async verifyToken(@Body('accessToken') accessToken: string) {
+      console.log('[InternalController] /internal/verify-token called');
+      const result = await this.internalService.verifyToken(accessToken);
+      console.log('[InternalController] /internal/verify-token', result.valid ? 200 : 401);
+      return result;
   }
 
   @Post('check-permissions')
@@ -63,19 +65,16 @@ export class InternalController {
     },
   })
   @ApiResponse({ status: 200 })
-  async checkPermissions(
-    @Body('userId') userId: string,
-    @Body('accountId') accountId: string,
-    @Body('permissions') permissions: string[],
-    @Body('mode') mode: 'ANY' | 'ALL' = 'ANY',
-  ) {
-    const hasPermission = await this.internalService.checkPermissions(
-      userId,
-      accountId,
-      permissions,
-      mode,
-    );
-    return { hasPermission };
+    async checkPermissions(
+      @Body('userId') userId: string,
+      @Body('accountId') accountId: string,
+      @Body('permissions') permissions: string[],
+      @Body('mode') mode: 'ANY' | 'ALL' = 'ANY',
+    ) {
+      const result = await this.internalService.checkPermissions(userId, accountId, permissions, mode);
+      console.log('[InternalController] /internal/check-permissions', result ? 200 : 401);
+      console.log('[InternalController] /internal/check-permissions result:', result);
+      return result;
   }
 
   @Post('check-roles')
